@@ -34,13 +34,13 @@ Public Class lexer
     '=====================================
     '========= GetTokensFromLine =========
     '=====================================
-    Public Function parse(ByVal line As String, ByVal filename As String, ByVal linePosition As Integer) As List(Of token)
+    Public Function parse(ByVal text As String, ByVal filename As String, ByVal linePosition As Integer) As List(Of token)
 
         Dim tokens As New List(Of token)
-        If line = Nothing Then
+        If text = Nothing Then
             Return tokens
         End If
-        text = line
+        Me.text = text
         charCounter = -1
         advance()
 
@@ -164,7 +164,7 @@ Public Class lexer
                 ElseIf dot_count = 1 Then
                     tokens.Add(New token(tokenType.CT_FLOAT, startPos, charCounter, create_number))
                 Else
-                    addSyntaxError("A number cannot contain more than one point", filename, linePosition, "LHP01", True, Nothing, line, startPos, charCounter)
+                    addCustomSyntaxError("LP02", "A number cannot contain more than one point", filename, linePosition, text, startPos, charCounter)
                 End If
 
             ElseIf authorizedNameCharacters.Contains(currentChar) Then
@@ -212,6 +212,7 @@ Public Class lexer
                 advance()
 
             ElseIf currentChar = vbTab Then
+                tokens.Add(New token(tokenType.CT_INDENTATION, charCounter, charCounter + 1))
                 advance()
 
             ElseIf currentChar = "," Then
@@ -246,7 +247,7 @@ Public Class lexer
 
             Else
                 'Error : Unauthorized character
-                addSyntaxError("The """ & currentChar & """ character was unexpected.", filename, linePosition, "PLLGTF02", True, Nothing, line, charCounter, charCounter + 1)
+                addCustomSyntaxError("LP01", "The """ & currentChar & """ character was unexpected.", filename, linePosition, text, charCounter, charCounter + 1)
             End If
 
         End While

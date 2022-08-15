@@ -44,6 +44,9 @@ Public Enum tokenType
 
     CT_TEXT
 
+    CT_NEWLINE
+    CT_INDENTATION
+
 
     'Keywords (KW)
     KW_VAR
@@ -54,6 +57,7 @@ Public Enum tokenType
     KW_RETURN
     KW_STRUCT
     KW_FUNC
+    KW_END
 
 
     'Operators (OP)
