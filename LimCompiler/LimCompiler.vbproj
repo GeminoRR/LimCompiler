@@ -4,6 +4,12 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>LimCompiler</RootNamespace>
     <TargetFramework>net6.0</TargetFramework>
+    <ApplicationIcon>logo_compiler.ico</ApplicationIcon>
+    <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\Release\</OutputPath>
   </PropertyGroup>
 
 </Project>

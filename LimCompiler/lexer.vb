@@ -34,7 +34,7 @@ Public Class lexer
     '=====================================
     '========= GetTokensFromLine =========
     '=====================================
-    Public Function parse(ByVal text As String, ByVal filename As String, ByVal linePosition As Integer) As List(Of token)
+    Public Function parse(ByVal text As String, ByVal filename As String) As List(Of token)
 
         Dim tokens As New List(Of token)
         If text = Nothing Then
@@ -44,6 +44,9 @@ Public Class lexer
         charCounter = -1
         advance()
 
+        Dim indentationCounter As Integer = 0
+
+        tokens.Add(New token(tokenType.CT_LINESTART, 0, 0, "0"))
         While Not currentChar = Nothing
 
             If currentChar = """" Then
@@ -55,7 +58,7 @@ Public Class lexer
                     create_string &= currentChar
                     advance()
                 End While
-                tokens.Add(New token(tokenType.CT_STRING, posStart, charCounter, create_string))
+                tokens.Add(New token(tokenType.CT_STRING, posStart, charCounter + 1, create_string))
                 advance()
 
             ElseIf currentChar = "'" Then
@@ -67,7 +70,7 @@ Public Class lexer
                     create_string &= currentChar
                     advance()
                 End While
-                tokens.Add(New token(tokenType.CT_STRING, posStart, charCounter, create_string))
+                tokens.Add(New token(tokenType.CT_STRING, posStart, charCounter + 1, create_string))
                 advance()
 
             ElseIf currentChar = "." Then
@@ -81,17 +84,26 @@ Public Class lexer
                 advance()
 
             ElseIf currentChar = "-" Then
-                'Plus operator
+                'Minus operator
                 tokens.Add(New token(tokenType.OP_MINUS, charCounter, charCounter + 1))
                 advance()
 
             ElseIf currentChar = "*" Then
-                'Plus operator
+                'Multiply operator
                 tokens.Add(New token(tokenType.OP_MULTIPLICATION, charCounter, charCounter + 1))
                 advance()
 
             ElseIf currentChar = "/" Then
-                'Plus operator
+                'Divide operatorf
+                If charCounter + 1 < text.Length Then
+                    If text(charCounter + 1) = "/" Then
+                        advance(2)
+                        While Not (currentChar = vbCr Or currentChar = Environment.NewLine)
+                            advance()
+                        End While
+                        Continue While
+                    End If
+                End If
                 tokens.Add(New token(tokenType.OP_DIVISION, charCounter, charCounter + 1))
                 advance()
 
@@ -101,12 +113,12 @@ Public Class lexer
                 advance()
 
             ElseIf currentChar = "=" Then
-                'Plus operator
+                'Equal operator
                 tokens.Add(New token(tokenType.OP_EQUAL, charCounter, charCounter + 1))
                 advance()
 
             ElseIf currentChar = ":" Then
-                'Plus operator
+                'TwoPoint operator
                 tokens.Add(New token(tokenType.OP_TWOPOINT, charCounter, charCounter + 1))
                 advance()
 
@@ -164,7 +176,7 @@ Public Class lexer
                 ElseIf dot_count = 1 Then
                     tokens.Add(New token(tokenType.CT_FLOAT, startPos, charCounter, create_number))
                 Else
-                    addCustomSyntaxError("LP02", "A number cannot contain more than one point", filename, linePosition, text, startPos, charCounter)
+                    addCustomSyntaxError("LP02", "A number cannot contain more than one point", filename, text, startPos, charCounter)
                 End If
 
             ElseIf authorizedNameCharacters.Contains(currentChar) Then
@@ -203,6 +215,10 @@ Public Class lexer
                         tokens.Add(New token(tokenType.KW_STRUCT, startPos, charCounter))
                     Case "func"
                         tokens.Add(New token(tokenType.KW_FUNC, startPos, charCounter))
+                    Case "space"
+                        tokens.Add(New token(tokenType.KW_SPACE, startPos, charCounter))
+                    Case "ref"
+                        tokens.Add(New token(tokenType.KW_REF, startPos, charCounter))
                     Case Else
                         tokens.Add(New token(tokenType.CT_TEXT, startPos, charCounter, create_var))
                 End Select
@@ -211,9 +227,39 @@ Public Class lexer
                 'Pass
                 advance()
 
-            ElseIf currentChar = vbTab Then
-                tokens.Add(New token(tokenType.CT_INDENTATION, charCounter, charCounter + 1))
+            ElseIf currentChar = vbCr Then
+                indentationCounter = 0
+                tokens.Add(New token(tokenType.CT_LINESTART, charCounter, charCounter + 1, indentationCounter.ToString()))
+                advance(2) 'Cariage Return + Line feed
+
+            ElseIf currentChar = vbLf Then
                 advance()
+
+            ElseIf currentChar = Environment.NewLine Then
+                indentationCounter = 0
+                tokens.Add(New token(tokenType.CT_LINESTART, charCounter, charCounter + 1, indentationCounter.ToString()))
+                advance()
+
+            ElseIf currentChar = vbTab Then
+                'Get indentation
+                If indentationCounter = -1 Then
+                    advance()
+                    Continue While
+                End If
+                Dim posStart As Integer = charCounter
+                While currentChar = vbTab
+                    indentationCounter += 1
+                    advance()
+                End While
+                If tokens(tokens.Count - 1).type = tokenType.CT_LINESTART Then
+                    tokens(tokens.Count - 1).positionStart = posStart
+                    tokens(tokens.Count - 1).positionEnd = charCounter
+                    tokens(tokens.Count - 1).value = indentationCounter.ToString()
+                Else
+                    addCustomError("lexer error", "The lexer tries to find the indentation of a start of line that does not exist.")
+                End If
+                indentationCounter = -1
+
 
             ElseIf currentChar = "," Then
                 'Separator
@@ -222,7 +268,7 @@ Public Class lexer
 
             ElseIf currentChar = "@" Then
                 'At
-                tokens.Add(New token(tokenType.OP_AT, charCounter, charCounter + 1))
+                tokens.Add(New token(tokenType.KW_REF, charCounter, charCounter + 1))
                 advance()
 
             ElseIf currentChar = "(" Then
@@ -245,14 +291,46 @@ Public Class lexer
                 tokens.Add(New token(tokenType.OP_RBRACKET, charCounter, charCounter + 1))
                 advance()
 
+            ElseIf currentChar = "{" Then
+                'Left Brace
+                tokens.Add(New token(tokenType.OP_LBRACE, charCounter, charCounter + 1))
+                advance()
+
+            ElseIf currentChar = "}" Then
+                'Right Brace
+                tokens.Add(New token(tokenType.OP_RBRACE, charCounter, charCounter + 1))
+                advance()
+
             Else
                 'Error : Unauthorized character
-                addCustomSyntaxError("LP01", "The """ & currentChar & """ character was unexpected.", filename, linePosition, text, charCounter, charCounter + 1)
+                addCustomSyntaxError("LP01", "The """ & currentChar & """ character was unexpected.", filename, text, charCounter, charCounter + 1)
             End If
 
         End While
 
+        'Remove useless lines
+        Dim i As Integer = 0
+        While i < tokens.Count
+
+            If tokens(i).type = tokenType.CT_LINESTART Then
+
+                While i + 1 < tokens.Count
+                    If tokens(i + 1).type = tokenType.CT_LINESTART Then
+                        tokens.RemoveAt(i)
+                    Else
+                        Exit While
+                    End If
+                End While
+
+            End If
+
+            i += 1
+
+        End While
+
+        tokens.Add(New token(tokenType.CT_LINESTART, charCounter, charCounter + 1, "0"))
         Return tokens
+
 
     End Function
 

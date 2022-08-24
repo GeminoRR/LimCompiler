@@ -13,3 +13,13 @@ C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\LimCompiler\obj\De
 C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\LimCompiler\obj\Debug\net6.0\LimCompiler.pdb
 C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\LimCompiler\obj\Debug\net6.0\LimCompiler.genruntimeconfig.cache
 C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\LimCompiler\obj\Debug\net6.0\ref\LimCompiler.dll
+C:\Users\gemin\Documents\Projets\Applications\Vtab\net6.0\LimCompiler.exe
+C:\Users\gemin\Documents\Projets\Applications\Vtab\net6.0\LimCompiler.deps.json
+C:\Users\gemin\Documents\Projets\Applications\Vtab\net6.0\LimCompiler.runtimeconfig.json
+C:\Users\gemin\Documents\Projets\Applications\Vtab\net6.0\LimCompiler.dll
+C:\Users\gemin\Documents\Projets\Applications\Vtab\net6.0\LimCompiler.pdb
+C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\Release\net6.0\LimCompiler.exe
+C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\Release\net6.0\LimCompiler.deps.json
+C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\Release\net6.0\LimCompiler.runtimeconfig.json
+C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\Release\net6.0\LimCompiler.dll
+C:\Users\gemin\Documents\Projets\Applications\Lim\LimCompiler\Release\net6.0\LimCompiler.pdb

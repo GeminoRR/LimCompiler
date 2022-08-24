@@ -44,8 +44,7 @@ Public Enum tokenType
 
     CT_TEXT
 
-    CT_NEWLINE
-    CT_INDENTATION
+    CT_LINESTART
 
 
     'Keywords (KW)
@@ -53,21 +52,24 @@ Public Enum tokenType
     KW_LET
     KW_CONST
 
+    KW_REF
     KW_NEW
+
     KW_RETURN
     KW_STRUCT
     KW_FUNC
-    KW_END
+    KW_SPACE
 
 
     'Operators (OP)
-    OP_AT
     OP_POINT
     OP_COMMA
     OP_LPAR
     OP_RPAR
     OP_LBRACKET
     OP_RBRACKET
+    OP_LBRACE
+    OP_RBRACE
     OP_TWOPOINT
 
     OP_PLUS
