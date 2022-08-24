@@ -3,6 +3,8 @@
 Lim Compiler is the programming language compiler I am creating.
 Please don't look at my horrible code.
 
+![Alt text](https://github.com/GeminoRR/LimCompiler/blob/master/LimCompiler/logo_compiler.ico?raw=true "LimCompiler's logo")
+
 ## The difference between other languages and Lim
 - Different management of references
 - Statically Typed
