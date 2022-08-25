@@ -53,7 +53,7 @@
 
             Dim obj As Node = space()
             If Not TypeOf obj Is SpaceNode Then
-                fileSpace.code.Add(obj)
+                fileSpace.addNodeToCode(obj)
             Else
                 spaces.Add(DirectCast(obj, SpaceNode))
             End If
@@ -131,9 +131,25 @@
             advance()
             Return New valueNode(tok.positionStart, tok.positionEnd, tok)
 
+        ElseIf tok.type = tokenType.CT_STRING Then
+            advance()
+            Return New StringNode(tok.positionStart, tok.positionEnd, tok.value)
+
+        ElseIf tok.type = tokenType.CT_TRUE Then
+            advance()
+            Return New BooleanNode(tok.positionStart, tok.positionEnd, True)
+
+        ElseIf tok.type = tokenType.CT_FALSE Then
+            advance()
+            Return New BooleanNode(tok.positionStart, tok.positionEnd, False)
+
+        ElseIf tok.type = tokenType.CT_TEXT Then
+            advance()
+            Return New VariableNode(tok.positionStart, tok.positionEnd, tok.value)
+
         ElseIf tok.type = tokenType.OP_LPAR Then
             advance()
-            Dim com = expr()
+            Dim com = comparison()
             If current_tok.type = tokenType.OP_RPAR Then
                 advance()
                 Return com
@@ -148,16 +164,91 @@
 
     End Function
 
+    '================================
+    '========= FunctionCall =========
+    '================================
+    Private Function functionCall() As Node
+
+        'Start of function call
+        If current_tok.type = tokenType.CT_TEXT Then
+
+            'Get start position
+            Dim startPosition As Integer = current_tok.positionStart
+
+            'Get content
+            Dim functionName As String = current_tok.value
+            advance()
+
+            'Check if it's a function call node
+            If Not current_tok.type = tokenType.OP_LPAR Then
+                recede()
+                Return factor()
+            End If
+            advance()
+
+            'Get arguments
+            Dim arguments As New List(Of Node)
+            While True
+
+                'End of function call
+                If current_tok.type = tokenType.OP_RPAR Then
+                    Exit While
+                End If
+
+                'Get argument
+                arguments.Add(comparison())
+
+                'Comma
+                If current_tok.type = tokenType.OP_COMMA Then
+                    advance()
+                End If
+
+            End While
+
+            'Get positionEnd
+            Dim endPosition As Integer = current_tok.positionEnd
+            advance()
+
+            'Add node
+            Return New FunctionCallNode(startPosition, endPosition, functionName, arguments)
+
+        End If
+
+        'Something else
+        Return factor()
+
+    End Function
+
+    '====================================
+    '========= BracketsSelector =========
+    '====================================
+    Private Function BracketsSelector() As Node
+
+        Dim Target As Node = functionCall()
+        While current_tok.type = tokenType.OP_LBRACKET
+            advance()
+            Dim Index As Node = comparison()
+            Target = New BracketsSelectorNode(Target.positionStart, Index.positionEnd, Target, Index)
+            If Not current_tok.type = tokenType.OP_RBRACKET Then
+                addCustomSyntaxError("NPBS01", "A ""]"" was expected here", filename, text, current_tok.positionStart, current_tok.positionEnd)
+            End If
+            advance()
+        End While
+
+        Return Target
+
+    End Function
+
     '========================
     '========= TERM =========
     '========================
     Private Function term() As Node
 
-        Dim left = factor()
+        Dim left = BracketsSelector()
         While current_tok.type = tokenType.OP_MULTIPLICATION Or current_tok.type = tokenType.OP_DIVISION Or current_tok.type = tokenType.OP_MODULO
             Dim op = current_tok
             advance()
-            Dim right = factor()
+            Dim right = BracketsSelector()
             left = New binOpNode(left.positionStart, right.positionEnd, left, op, right)
         End While
 
@@ -182,12 +273,121 @@
 
     End Function
 
+    '==============================
+    '========= COMPARISON =========
+    '==============================
+    Private Function comparison() As Node
+
+        Dim left As Node = expr()
+        While {tokenType.OP_EQUAL, tokenType.OP_LESSTHAN, tokenType.OP_LESSTHANEQUAL, tokenType.OP_MORETHAN, tokenType.OP_MORETHANEQUAL, tokenType.OP_IN}.Contains(current_tok.type)
+            Dim op As token = current_tok
+            advance()
+            Dim right As Node = expr()
+            left = New ComparisonNode(left.positionStart, right.positionEnd, left, op, right)
+        End While
+
+        Return left
+
+    End Function
+
     '========================
     '========= LINE =========
     '========================
     Private Function line() As Node
 
-        Return expr()
+        'It's another thing that a line
+        If Not current_tok.type = tokenType.CT_LINESTART Then
+            Return comparison()
+        End If
+
+        'Get startPosition
+        Dim positionStart As Integer = current_tok.positionStart
+        advance()
+
+        'Declare variable
+        If current_tok.type = tokenType.KW_VAR Or current_tok.type = tokenType.KW_LET Then
+
+            'Get variable declaration type
+            Dim declarationType As VariableDeclarationType = VariableDeclarationType._let_
+            If current_tok.type = tokenType.KW_VAR Then
+                declarationType = VariableDeclarationType._var_
+            ElseIf current_tok.type = tokenType.KW_LET Then
+                declarationType = VariableDeclarationType._let_
+            End If
+            advance()
+
+            'Get ref
+            Dim isReference As Boolean = False
+            If current_tok.type = tokenType.KW_REF Then
+                isReference = True
+                advance()
+            End If
+
+            'Get name
+            If Not current_tok.type = tokenType.CT_TEXT Then
+                addCustomSyntaxError("NPL02", "A variable name was expected here", filename, text, current_tok.positionStart, current_tok.positionEnd)
+            End If
+            Dim variableName As String = current_tok.value
+            advance()
+
+            'Get type
+            Dim variableUnsafeType As unsafeType = Nothing
+            If current_tok.type = tokenType.OP_TWOPOINT Then
+                advance()
+                variableUnsafeType = type()
+            End If
+
+            'Get endPosition
+            Dim endPosition As Integer = current_tok.positionEnd
+
+            'Get value
+            Dim value As Node = Nothing
+            If current_tok.type = tokenType.OP_EQUAL Then
+                advance()
+                value = comparison()
+                endPosition = value.positionEnd
+            End If
+
+            'Handle type error
+            If variableUnsafeType Is Nothing And value Is Nothing Then
+                addCustomSyntaxError("NPL03", "The declaration of a variable must be accompanied by either a type, a value, or both", filename, text, positionStart)
+            End If
+
+            'Add node
+            Return New DeclareVariableNode(positionStart, endPosition, declarationType, variableName, value, variableUnsafeType, isReference)
+
+        End If
+
+        'Continue parsing
+        Dim left As Node = comparison()
+
+        'Set variable
+        If TypeOf left Is ComparisonNode Then
+
+            'Cast
+            Dim castedNode As ComparisonNode = DirectCast(left, ComparisonNode)
+
+            'Handle error
+            If Not castedNode.op.type = tokenType.OP_EQUAL Then
+                addCustomSyntaxError("NPL04", "A comparison is irrelevant here", filename, text, castedNode.positionStart, castedNode.positionEnd)
+            End If
+
+            'Add node
+            Return New SetVariableNode(positionStart, castedNode.positionEnd, castedNode.leftNode, castedNode.rightNode)
+
+        End If
+
+        'Function call
+        If TypeOf left Is FunctionCallNode Then
+
+            'Add node
+            Return left
+
+        End If
+
+        'Unknow line type
+        addCustomSyntaxError("NPL01", "Unable to find line type", filename, text, positionStart)
+        Return Nothing
 
     End Function
 
@@ -313,7 +513,7 @@
                     Exit While
                 End If
 
-                'currentFunction.codes.Add(line())
+                currentFunction.addNodeToCode(line())
 
             End While
 
@@ -322,7 +522,7 @@
 
         End If
 
-        'It's another thing that a space (namespace)
+        'It's another thing that a function
         If needToRecede = True Then
             recede()
         End If
@@ -378,8 +578,8 @@
                 End If
 
                 Dim toAdd As Node = space()
-                If TypeOf toAdd Is SpaceNode Or TypeOf toAdd Is FunctionNode Then
-                    currentSpace.code.Add(toAdd)
+                If TypeOf toAdd Is SpaceNode Or TypeOf toAdd Is FunctionNode Or TypeOf toAdd Is DeclareVariableNode Then
+                    currentSpace.addNodeToCode(toAdd)
                 Else
                     addCustomSyntaxWarning("NPSW01", "The following line of code cannot be located in this frame, it will not be taken into account.", filename, text, toAdd.positionStart, toAdd.positionEnd)
                 End If

@@ -20,6 +20,26 @@ Public MustInherit Class Node
 
 End Class
 
+'==================================
+'========= CONTAINER NODE =========
+'==================================
+Public MustInherit Class containerNode
+    Inherits Node
+
+    Public variables As New List(Of Object)
+    Public codes As New List(Of Node)
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer)
+        MyBase.New(positionStart, positionEnd)
+    End Sub
+
+    Public Sub addNodeToCode(ByVal node As Node)
+        node.parentNode = Me
+        codes.Add(node)
+    End Sub
+
+End Class
+
 '========================
 '========= FILE =========
 '========================
@@ -30,13 +50,16 @@ Public Class FileNode
     Public name As String
     Public path As String
 
+    Public compiler As compiler
+
     Public spaces As List(Of SpaceNode)
-    Public Sub New(ByVal path As String)
+    Public Sub New(ByVal path As String, ByVal compiler As compiler)
 
         'Inherits
         MyBase.New(0, 0)
 
         'Load infos
+        Me.compiler = compiler
         Me.text = text
         path = path.Replace("\", "/")
         Me.path = path
@@ -61,6 +84,11 @@ Public Class FileNode
         Dim parser As New nodeParser()
         spaces = parser.parse(tokens, text, Me.name)
 
+        'Set parents
+        For i As Integer = 0 To spaces.Count - 1
+            spaces(i).parentNode = Me
+        Next
+
         For Each st As SpaceNode In spaces
             Console.WriteLine(st.ToString())
         Next
@@ -77,10 +105,9 @@ End Class
 '========= SPACE =========
 '=========================
 Public Class SpaceNode
-    Inherits Node
+    Inherits containerNode
 
     Public name As String
-    Public code As New List(Of Node)
 
     Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal name As String)
         MyBase.New(positionStart, positionEnd)
@@ -89,7 +116,7 @@ Public Class SpaceNode
 
     Public Overrides Function ToString() As String
         Dim content As String = ""
-        For Each code As Node In Me.code
+        For Each code As Node In Me.codes
             content &= Environment.NewLine & vbTab & code.ToString()
         Next
         Return "space " & name & "" & content
@@ -97,20 +124,6 @@ Public Class SpaceNode
 
 End Class
 
-'==================================
-'========= CONTAINER NODE =========
-'==================================
-Public MustInherit Class containerNode
-    Inherits Node
-
-    Public variables As New List(Of Object)
-    Public codes As New List(Of Node)
-
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer)
-        MyBase.New(positionStart, positionEnd)
-    End Sub
-
-End Class
 
 '============================
 '========= FUNCTION =========
@@ -184,6 +197,29 @@ Public Class FunctionArgument
 
 End Class
 
+'================================
+'========= SET VARIABLE =========
+'================================
+Public Class SetVariableNode
+    Inherits Node
+
+    Public Target As Node
+    Public NewValue As Node
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal Target As Node, ByVal NewValue As Node)
+        MyBase.New(positionStart, positionEnd)
+        Me.Target = Target
+        Me.Target.parentNode = Me
+        Me.NewValue = NewValue
+        Me.NewValue.parentNode = Me
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return Target.ToString() & " = " & NewValue.ToString()
+    End Function
+
+End Class
+
 '====================================
 '========= DECLARE VARIABLE =========
 '====================================
@@ -194,12 +230,15 @@ Public Class DeclareVariableNode
     Public variableUnsafeType As unsafeType
     Public value As Node
     Public variableIsReference As Boolean
+    Public declarationType As VariableDeclarationType
 
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal variableName As String, ByVal value As Node, ByVal variableUnsafeType As unsafeType, Optional ByVal variableIsReference As Boolean = False)
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal declarationType As VariableDeclarationType, ByVal variableName As String, ByVal value As Node, ByVal variableUnsafeType As unsafeType, Optional ByVal variableIsReference As Boolean = False)
         MyBase.New(positionStart, positionEnd)
         Me.variableName = variableName
+        Me.declarationType = declarationType
         Me.variableIsReference = variableIsReference
         Me.value = value
+        Me.value.parentNode = Me
         Me.variableUnsafeType = variableUnsafeType
     End Sub
 
@@ -214,14 +253,168 @@ Public Class DeclareVariableNode
         End If
         Dim unsafeTypeSTR As String = ""
         If Not variableUnsafeType Is Nothing Then
-            unsafeTypeSTR = ":" & unsafeTypeSTR.ToString()
+            unsafeTypeSTR = ":" & variableUnsafeType.ToString()
         End If
-        Return "(VAR " & refSTR & variableName & unsafeTypeSTR & valueSTR & ")"
+        Dim declareSTR As String = "UnknownDeclaration"
+        Select Case declarationType
+            Case VariableDeclarationType._let_
+                declareSTR = "LET"
+            Case VariableDeclarationType._var_
+                declareSTR = "VAR"
+        End Select
+        Return declareSTR & " " & refSTR & variableName & unsafeTypeSTR & valueSTR
+    End Function
+
+End Class
+Public Enum VariableDeclarationType
+    _let_
+    _var_
+End Enum
+
+'========================================
+'========= BracketsSelectorNode =========
+'========================================
+Public Class BracketsSelectorNode
+    Inherits Node
+
+    Public Target As Node
+    Public index As Node
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal Target As Node, ByVal index As Node)
+
+        MyBase.New(positionStart, positionEnd)
+        Me.Target = Target
+        Me.Target.parentNode = Me
+        Me.index = index
+        Me.index.parentNode = Me
+
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return String.Format("({0}[{1}])", Target.ToString(), index.ToString())
     End Function
 
 End Class
 
+'====================================
+'========= FunctionCallNode =========
+'====================================
+Public Class FunctionCallNode
+    Inherits Node
 
+    Public FunctionName As String
+    Public Arguments As New List(Of Node)
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal FunctionName As String, ByVal Arguments As List(Of Node))
+
+        MyBase.New(positionStart, positionEnd)
+        Me.FunctionName = FunctionName
+        For Each Arg As Node In Arguments
+            Arg.parentNode = Me
+            Me.Arguments.Add(Arg)
+        Next
+
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Dim ATS As String = ""
+        For Each arg As Node In Arguments
+            ATS &= ", " & arg.ToString()
+        Next
+        Return FunctionName & "(" & ATS.Substring(2) & ")"
+    End function
+
+End Class
+
+'================================
+'========= VariableNode =========
+'================================
+Public Class VariableNode
+    Inherits Node
+
+    Public VariableName As String
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal VariableName As String)
+
+        MyBase.New(positionStart, positionEnd)
+        Me.VariableName = VariableName
+
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return VariableName
+    End Function
+
+End Class
+
+'==================================
+'========= ComparisonNode =========
+'==================================
+Public Class ComparisonNode
+    Inherits Node
+
+    Public leftNode As Node
+    Public op As token
+    Public rightNode As Node
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal leftNode As Node, ByVal op As token, ByVal rightNode As Node)
+
+        MyBase.New(positionStart, positionEnd)
+        Me.leftNode = leftNode
+        Me.leftNode.parentNode = Me
+        Me.op = op
+        Me.rightNode = rightNode
+        Me.rightNode.parentNode = Me
+
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return String.Format("({0} {1} {2})", leftNode, op, rightNode)
+    End Function
+
+End Class
+
+'===============================
+'========= BooleanNode =========
+'===============================
+Public Class BooleanNode
+    Inherits Node
+
+    Public value As Boolean
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal value As Boolean)
+
+        MyBase.New(positionStart, positionEnd)
+        Me.value = value
+
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return value.ToString()
+    End Function
+
+End Class
+
+'==============================
+'========= StringNode =========
+'==============================
+Public Class StringNode
+    Inherits Node
+
+    Public value As String
+
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal value As String)
+
+        MyBase.New(positionStart, positionEnd)
+        Me.value = value
+
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return """" & value & """"
+    End Function
+
+End Class
 
 '=============================
 '========= ValueNode =========
@@ -239,7 +432,18 @@ Public Class valueNode
     End Sub
 
     Public Overrides Function ToString() As String
-        Return "" & tok.ToString() & ""
+        Select Case tok.type
+            Case tokenType.CT_FLOAT
+                If tok.value.Contains(".") Then
+                    Return tok.value
+                Else
+                    Return tok.value & ".0"
+                End If
+            Case tokenType.CT_INTEGER
+                Return tok.value
+            Case Else
+                Return "" & tok.ToString() & ""
+        End Select
     End Function
 
 End Class

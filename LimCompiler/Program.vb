@@ -97,10 +97,10 @@ Module Program
             Dim linePosition As String = infos(1)
             Dim lineStartPosition As Integer = Convert.ToInt32(infos(2))
 
-            While line.StartsWith(vbTab)
-                line = line.Substring(1)
-                lineStartPosition += 1
-            End While
+            'While line.StartsWith(vbTab)
+            '    line = line.Substring(1)
+            '    lineStartPosition += 1
+            'End While
 
             positionStart -= lineStartPosition
             positionEnd -= lineStartPosition
@@ -127,7 +127,7 @@ Module Program
     '==========================================
     '========== CUSTOM SYNTAX ERROR  ==========
     '==========================================
-    Public Sub addCustomSyntaxError(ByVal code As String, ByVal message As String, ByVal filename As String, Optional ByRef text As String = "", Optional ByVal positionStart As Integer = 0, Optional ByVal positionEnd As Integer = 0)
+    Public Sub addCustomSyntaxError(ByVal code As String, ByVal message As String, ByVal filename As String, Optional ByRef text As String = "", Optional ByVal positionStart As Integer = 0, Optional ByVal positionEnd As Integer = -1)
 
         Dim beforeColor As ConsoleColor = Console.ForegroundColor
 
@@ -141,13 +141,22 @@ Module Program
             Dim linePosition As String = infos(1)
             Dim lineStartPosition As Integer = Convert.ToInt32(infos(2))
 
-            While line.StartsWith(vbTab)
-                line = line.Substring(1)
-                lineStartPosition += 1
-            End While
+            If positionEnd = -1 Then
+                positionEnd = positionStart
+            End If
+
+            'While line.StartsWith(vbTab)
+            '    line = line.Substring(1)
+            '    lineStartPosition += 1
+            'End While
 
             positionStart -= lineStartPosition
             positionEnd -= lineStartPosition
+
+            If positionStart < 0 Or positionEnd < 0 Then
+                positionStart = lineStartPosition
+                positionEnd = lineStartPosition
+            End If
 
             Console.ForegroundColor = beforeColor
             Dim preLine As String = " -> "
@@ -223,9 +232,31 @@ Module Program
     '==================================
     Public Sub addSyntaxError(ByVal code As String, ByVal message As String, ByVal node As node)
 
-        'Normal syntax error
+        Dim file As FileNode = getFileFromNode(node)
+        addCustomSyntaxError(code, message, file.name, file.text, node.positionStart, node.positionEnd)
 
     End Sub
 
+    '============================
+    '========= GET FILE =========
+    '============================
+    Public Function getFileFromNode(ByVal currentNode As Node) As FileNode
+
+        Dim parentNode As Node = currentNode
+
+        While Not parentNode.parentNode Is Nothing
+            parentNode = parentNode.parentNode
+            If TypeOf parentNode Is FileNode Then
+                Exit While
+            End If
+        End While
+        Console.WriteLine(parentNode.ToString())
+        If Not TypeOf parentNode Is FileNode Then
+            addCustomError("Internal Link error", "Cannot find the parent File")
+        End If
+
+        Return parentNode
+
+    End Function
 
 End Module
