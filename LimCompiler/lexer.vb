@@ -85,6 +85,13 @@ Public Class lexer
 
             ElseIf currentChar = "-" Then
                 'Minus operator
+                If charCounter + 1 < text.Length Then
+                    If text(charCounter + 1) = ">" Then
+                        tokens.Add(New token(tokenType.OP_SPACEARROW, charCounter, charCounter + 2))
+                        advance(2)
+                        Continue While
+                    End If
+                End If
                 tokens.Add(New token(tokenType.OP_MINUS, charCounter, charCounter + 1))
                 advance()
 
@@ -94,7 +101,7 @@ Public Class lexer
                 advance()
 
             ElseIf currentChar = "/" Then
-                'Divide operatorf
+                'Divide operator
                 If charCounter + 1 < text.Length Then
                     If text(charCounter + 1) = "/" Then
                         advance(2)

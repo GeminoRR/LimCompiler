@@ -64,6 +64,16 @@
 
     End Function
 
+
+    '===============================
+    '========= SPACE ARROW =========
+    '===============================
+    Private Function spaceArrow() As Node
+
+
+
+    End Function
+
     '========================
     '========= TYPE =========
     '========================
@@ -356,6 +366,7 @@
             'Add node
             Return New DeclareVariableNode(positionStart, endPosition, declarationType, variableName, value, variableUnsafeType, isReference)
 
+            Console.WriteLine(variableUnsafeType.ToString())
         End If
 
         'Continue parsing
@@ -418,10 +429,11 @@
             End If
 
             'Get name
-            Dim currentFunction As New FunctionNode(startPosition, startPosition + 1, current_tok.value, New List(Of FunctionArgument))
+            Dim name As String = current_tok.value
             advance()
 
             'Get arguments
+            Dim arguments As New List(Of FunctionArgument)
             If current_tok.type = tokenType.OP_LPAR Then 'func Name(username:str, @id:int[])
 
                 'First arg
@@ -464,7 +476,7 @@
                         LastArgumentUnsafeType = type()
 
                         'Add argument
-                        currentFunction.Arguments.Add(New FunctionArgument(LastArgumentName, LastArgumentUnsafeType, LastArgumentRef))
+                        arguments.Add(New FunctionArgument(LastArgumentName, LastArgumentUnsafeType, LastArgumentRef))
 
                         'Search for end
                         If current_tok.type = tokenType.OP_COMMA Then
@@ -489,12 +501,16 @@
             End If
 
             'Unsafe type
+            Dim FunctionUnsafeType As unsafeType = Nothing
             If current_tok.type = tokenType.OP_TWOPOINT Then
 
                 advance()
-                currentFunction.unsafeReturnType = type()
+                FunctionUnsafeType = type()
 
             End If
+
+            'Create node
+            Dim currentFunction As New FunctionNode(startPosition, startPosition + 1, name, arguments, FunctionUnsafeType)
 
             'Get error
             If Not current_tok.type = tokenType.CT_LINESTART Then
@@ -527,6 +543,76 @@
             recede()
         End If
         Return line()
+
+    End Function
+
+    '==========================
+    '========= STRUCT =========
+    '==========================
+    Private Function struct() As Node
+
+        'Check indentation
+        Dim needToRecede As Boolean = False
+        Dim structIndentation As Integer = 0
+        If current_tok.type = tokenType.CT_LINESTART Then
+            structIndentation = Convert.ToInt32(current_tok.value)
+            advance()
+            needToRecede = True
+        End If
+
+        'Check if node is struct
+        If current_tok.type = tokenType.KW_STRUCT Then
+
+            'Save start pos
+            Dim startPosition As Integer = current_tok.positionStart
+            advance()
+
+            'Get error
+            If Not current_tok.type = tokenType.CT_TEXT Then
+                addCustomSyntaxError("NPS01", "A name was expected here", filename, Me.text, current_tok.positionStart, current_tok.positionEnd)
+            End If
+
+            'Get name
+            Dim currentStruct As New StructNode(startPosition, startPosition + 1, current_tok.value)
+            advance()
+
+            'Get error
+            If Not current_tok.type = tokenType.CT_LINESTART Then
+                addCustomSyntaxError("NPS02", "A newline was expected here", filename, Me.text, current_tok.positionStart, current_tok.positionEnd)
+            End If
+
+            'Get content
+            While True
+
+                If Not current_tok.type = tokenType.CT_LINESTART Then
+                    addCustomSyntaxError("NPS03", "A newline was expected here", filename, text, current_tok.positionStart, current_tok.positionEnd)
+                End If
+                Dim currentLineIndentation As Integer = Convert.ToInt32(current_tok.value)
+
+                If currentLineIndentation <= structIndentation Then
+                    Exit While
+                End If
+
+                Dim toAdd As Node = func()
+                If TypeOf toAdd Is FunctionNode Or TypeOf toAdd Is DeclareVariableNode Then
+                    currentStruct.addNodeToCode(toAdd)
+                Else
+                    addCustomSyntaxWarning("NPSW01", "The following line of code cannot be located in this frame, it will not be taken into account.", filename, text, toAdd.positionStart, toAdd.positionEnd)
+                End If
+
+            End While
+
+            'Add node
+            Return currentStruct
+
+
+        End If
+
+        'It's another thing that a function
+        If needToRecede = True Then
+            recede()
+        End If
+        Return func()
 
     End Function
 
@@ -578,7 +664,7 @@
                 End If
 
                 Dim toAdd As Node = space()
-                If TypeOf toAdd Is SpaceNode Or TypeOf toAdd Is FunctionNode Or TypeOf toAdd Is DeclareVariableNode Then
+                If TypeOf toAdd Is SpaceNode Or TypeOf toAdd Is FunctionNode Or TypeOf toAdd Is DeclareVariableNode Or TypeOf toAdd Is StructNode Then
                     currentSpace.addNodeToCode(toAdd)
                 Else
                     addCustomSyntaxWarning("NPSW01", "The following line of code cannot be located in this frame, it will not be taken into account.", filename, text, toAdd.positionStart, toAdd.positionEnd)
@@ -595,7 +681,7 @@
         If needToRecede = True Then
             recede()
         End If
-        Return func()
+        Return struct()
 
     End Function
 
