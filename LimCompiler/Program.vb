@@ -53,8 +53,13 @@ Module Program
         End If
 
         'Compile
-        Dim compiler As New compiler()
-        compiler.compile(target, output, flags)
+        If flags.Contains("-c") Then
+            Dim compiler As New CCompiler()
+            compiler.compile(target, output, flags)
+        Else
+            Dim compiler As New VB_Compiler()
+            compiler.compile(target, output, flags)
+        End If
 
         'End app
         endApp()

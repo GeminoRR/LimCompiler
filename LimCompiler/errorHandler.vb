@@ -76,13 +76,13 @@
                 positionEnd = positionStart
             End If
 
-            'While line.StartsWith(vbTab)
-            '    line = line.Substring(1)
-            '    lineStartPosition += 1
-            'End While
-
             positionStart -= lineStartPosition
             positionEnd -= lineStartPosition
+
+            While line.StartsWith(vbTab)
+                line = line.Substring(vbTab.Length)
+                positionStart -= 1
+            End While
 
             If positionStart < 0 Or positionEnd < 0 Then
                 positionStart = lineStartPosition

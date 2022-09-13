@@ -1,6 +1,5 @@
 ﻿Imports System.IO
-Public Class compiler
-
+Public Class CCompiler
 
     '===============================
     '========== VARIABLES ==========
@@ -11,6 +10,15 @@ Public Class compiler
     Public compiledStructsLogic As String
     Public compiledFunctionsDefinitions As String
     Public compiledFunctions As String
+
+    Private CompiledNameAlphabet As String = "abcdefghijklmnoqrstuvwxyz"
+    Private variableCount As Integer = 0
+    Private helpVariableCount As Integer = 0
+    Private functionCount As Integer = 0
+    Private structCount As Integer = 0
+
+    Public compiledListTemplate As String
+    Public compiledMapTemplate As String
 
     '=============================
     '========== COMPILE ==========
@@ -33,7 +41,7 @@ Public Class compiler
             addCustomError("Cannot read file", """" & templateFolder & "/list.c"" is missing")
         End If
         Try
-            helper.compiledListTemplate = File.ReadAllText(templateFolder & "/list.c")
+            compiledListTemplate = File.ReadAllText(templateFolder & "/list.c")
         Catch ex As Exception
             addCustomError("Cannot read file", ex.Message)
         End Try
@@ -41,17 +49,17 @@ Public Class compiler
             addCustomError("Cannot read file", """" & templateFolder & "/map.c"" is missing")
         End If
         Try
-            helper.compiledMapTemplate = File.ReadAllText(templateFolder & "/map.c")
+            compiledMapTemplate = File.ReadAllText(templateFolder & "/map.c")
         Catch ex As Exception
             addCustomError("Cannot read file", ex.Message)
         End Try
 
         'Add file
-        Dim mainFile As New FileNode(target, Me)
+        Dim mainFile As New FileNode(target)
         spaces.AddRange(mainFile.spaces)
 
         'Compile code
-        mainFile.compile()
+
 
         'Merge template & code
         Dim finalCode As String
@@ -64,10 +72,10 @@ Public Class compiler
 
         'Save code
         Dim appData As String = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("\", "/") & "/Lim"
-        If Not Directory.Exists(appData & "/compile/src") Then
-            Directory.CreateDirectory(appData & "/compile/src")
+        If Not Directory.Exists(appData & "/compile/C/src") Then
+            Directory.CreateDirectory(appData & "/compile/C/src")
         End If
-        Dim finalCodePath As String = appData & "/compile/src/main.c"
+        Dim finalCodePath As String = appData & "/compile/C/src/main.c"
         Try
             File.WriteAllText(finalCodePath, finalCode)
         Catch ex As Exception
@@ -78,5 +86,66 @@ Public Class compiler
         Process.Start("cmd.exe", "/c """ & finalCodePath & """")
 
     End Sub
+
+
+    '===================================
+    '========== GENERATE NAME ==========
+    '===================================
+    Public Function generateCompiledName(ByRef counter As Integer) As String
+
+        counter += 1
+
+        Dim colones As New List(Of Integer) From {-1}
+        For i As Integer = 0 To counter
+
+            colones(colones.Count - 1) += 1
+            For x As Integer = 0 To colones.Count - 1
+                Dim currentColoneCheck As Integer = colones.Count - 1 - x
+                If colones(currentColoneCheck) >= CompiledNameAlphabet.Count Then
+                    colones(currentColoneCheck) = 0
+                    If currentColoneCheck = 0 Then
+                        colones.Add(0)
+                    Else
+                        colones(currentColoneCheck - 1) += 1
+                    End If
+                End If
+            Next
+        Next
+
+        Dim str As String = ""
+        For Each col As Integer In colones
+            str &= CompiledNameAlphabet(col)
+        Next
+        Return str
+
+    End Function
+
+    '=================================================
+    '========== GENERATE HELP VARIABLE NAME ==========
+    '=================================================
+    Public Function getHelpVariableName() As String
+        Return "hv_" & generateCompiledName(helpVariableCount)
+    End Function
+
+    '============================================
+    '========== GENERATE VARIABLE NAME ==========
+    '============================================
+    Public Function getVariableName() As String
+        Return "v_" & generateCompiledName(variableCount)
+    End Function
+
+    '============================================
+    '========== GENERATE FUNCTION NAME ==========
+    '============================================
+    Public Function getFunctionName() As String
+        Return "f_" & generateCompiledName(functionCount)
+    End Function
+
+    '==========================================
+    '========== GENERATE STRUCT NAME ==========
+    '==========================================
+    Public Function getStructName() As String
+        Return "s_" & generateCompiledName(structCount)
+    End Function
 
 End Class

@@ -14,8 +14,6 @@ Public MustInherit Class Node
         Me.positionEnd = positionEnd
     End Sub
 
-    Public MustOverride Function compile() As String
-
     Public Overrides Function ToString() As String
         Return "()"
     End Function
@@ -53,18 +51,15 @@ Public Class FileNode
     Public name As String
     Public path As String
 
-    Public compiler As compiler
-
     Public spaces As List(Of SpaceNode)
 
     'New
-    Public Sub New(ByVal path As String, ByVal compiler As compiler)
+    Public Sub New(ByVal path As String)
 
         'Inherits
         MyBase.New(0, 0)
 
         'Load infos
-        Me.compiler = compiler
         Me.text = text
         path = path.Replace("\", "/")
         Me.path = path
@@ -94,22 +89,7 @@ Public Class FileNode
             spaces(i).parentNode = Me
         Next
 
-        For Each st As SpaceNode In spaces
-            Console.WriteLine(st.ToString())
-        Next
-
-
     End Sub
-
-    'Compiled
-    Public Overrides Function compile() As String
-
-        For Each space As SpaceNode In spaces
-            space.compile()
-        Next
-        Return ""
-
-    End Function
 
     'ToString
     Public Overrides Function ToString() As String
@@ -132,22 +112,6 @@ Public Class SpaceNode
         MyBase.New(positionStart, positionEnd)
         Me.name = name
     End Sub
-
-    'Compile
-    Public Overrides Function compile() As String
-
-        For Each node As Node In Me.codes
-
-            If TypeOf node Is DeclareVariableNode Then
-                addSyntaxError("NHSN01", "Variable outside logic block is not yet implemented", node)
-            Else
-                node.compile()
-            End If
-
-        Next
-        Return ""
-
-    End Function
 
     'ToString
     Public Overrides Function ToString() As String

@@ -17,11 +17,6 @@ Public Class SetVariableNode
         Me.NewValue.parentNode = Me
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Return Target.ToString() & " = " & NewValue.ToString()
@@ -37,15 +32,16 @@ Public Class DeclareVariableNode
 
     'Variables
     Public variableName As String
-    Public variableUnsafeType As unsafeType
+    Public variableUnsafeType As typeNode
     Public value As Node
     Public variableIsReference As Boolean
     Public declarationType As VariableDeclarationType
 
     'New
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal declarationType As VariableDeclarationType, ByVal variableName As String, ByVal value As Node, ByVal variableUnsafeType As unsafeType, Optional ByVal variableIsReference As Boolean = False)
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal declarationType As VariableDeclarationType, ByVal variableName As String, ByVal value As Node, ByVal variableUnsafeType As typeNode, Optional ByVal variableIsReference As Boolean = False)
         MyBase.New(positionStart, positionEnd)
         Me.variableUnsafeType = variableUnsafeType
+        Me.variableUnsafeType.parentNode = Me
         Me.variableName = variableName
         Me.declarationType = declarationType
         Me.variableIsReference = variableIsReference
@@ -54,11 +50,6 @@ Public Class DeclareVariableNode
             Me.value.parentNode = Me
         End If
     End Sub
-
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
 
     'ToString
     Public Overrides Function ToString() As String

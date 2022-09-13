@@ -19,11 +19,6 @@ Public Class BracketsSelectorNode
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Return String.Format("({0}[{1}])", Target.ToString(), index.ToString())
@@ -38,14 +33,15 @@ Public Class FunctionCallNode
     Inherits Node
 
     'Variable
-    Public FunctionName As String
+    Public FunctionPath As ElementPathNode
     Public Arguments As New List(Of Node)
 
     'New
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal FunctionName As String, ByVal Arguments As List(Of Node))
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal FunctionName As ElementPathNode, ByVal Arguments As List(Of Node))
 
         MyBase.New(positionStart, positionEnd)
-        Me.FunctionName = FunctionName
+        Me.FunctionPath = FunctionName
+        Me.FunctionPath.parentNode = Me
         For Each Arg As Node In Arguments
             Arg.parentNode = Me
             Me.Arguments.Add(Arg)
@@ -53,18 +49,16 @@ Public Class FunctionCallNode
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Dim ATS As String = ""
         For Each arg As Node In Arguments
             ATS &= ", " & arg.ToString()
         Next
-        Return FunctionName & "(" & ATS.Substring(2) & ")"
+        If ATS.StartsWith(", ") Then
+            ATS = ATS.Substring(2)
+        End If
+        Return FunctionPath.ToString & "(" & ATS & ")"
     End Function
 
 End Class
@@ -76,24 +70,20 @@ Public Class VariableNode
     Inherits Node
 
     'Variable
-    Public VariableName As String
+    Public VariableName As ElementPathNode
 
     'New
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal VariableName As String)
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal VariableName As ElementPathNode)
 
         MyBase.New(positionStart, positionEnd)
         Me.VariableName = VariableName
+        Me.VariableName.parentNode = Me
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
-        Return VariableName
+        Return VariableName.ToString()
     End Function
 
 End Class
@@ -121,11 +111,6 @@ Public Class ComparisonNode
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Return String.Format("({0} {1} {2})", leftNode, op, rightNode)
@@ -149,11 +134,6 @@ Public Class BooleanNode
         Me.value = value
 
     End Sub
-
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
 
     'ToString
     Public Overrides Function ToString() As String
@@ -179,11 +159,6 @@ Public Class StringNode
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Return """" & value & """"
@@ -207,11 +182,6 @@ Public Class valueNode
         Me.tok = tok
 
     End Sub
-
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
 
     'ToString
     Public Overrides Function ToString() As String
@@ -251,11 +221,6 @@ Public Class UnaryOpNode
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Return String.Format("({0} {1})", op, node)
@@ -287,11 +252,6 @@ Public Class binOpNode
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Return String.Format("({0} {1} {2})", leftNode, op, rightNode)
@@ -318,11 +278,6 @@ Public Class childVariableNode
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
         Return String.Format("{0}.{1}", parentStruct, variableName)
@@ -330,34 +285,37 @@ Public Class childVariableNode
 
 End Class
 
-'==============================
-'========= From Space =========
-'==============================
-Public Class fromSpaceNode
+'=====================================
+'========= Element Path Node =========
+'=====================================
+Public Class ElementPathNode
     Inherits Node
 
     'Variables
-    Public name As String
-    Public child As Node
+    Public childs As New List(Of String)
 
     'New
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal spaceName As String, ByVal child As Node)
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, Optional childs As List(Of String) = Nothing)
 
         MyBase.New(positionStart, positionEnd)
-        Me.name = name
-        Me.child = child
-        Me.child.parentNode = Me
+        If Not childs Is Nothing Then
+            For Each child As String In childs
+                Me.childs.Add(child)
+            Next
+        End If
 
     End Sub
 
-    'Compile
-    Public Overrides Function compile() As String
-        Throw New NotImplementedException()
-    End Function
-
     'ToString
     Public Overrides Function ToString() As String
-        Return String.Format("{0}->{1}", name, child.ToString())
+        Dim childsToString As String = ""
+        For Each child As String In childs
+            childsToString &= "->" & child
+        Next
+        If childsToString.StartsWith("->") Then
+            childsToString = childsToString.Substring(2)
+        End If
+        Return childsToString
     End Function
 
 End Class

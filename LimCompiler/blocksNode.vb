@@ -6,23 +6,17 @@ Public Class StructNode
 
     'Variable
     Public Name As String
-    Public compiledName As String
+    Public compiledName As String = ""
+    Public compiled As Boolean
 
     'New
     Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal Name As String)
 
         MyBase.New(positionStart, positionEnd)
         Me.Name = Name
-        Me.compiledName = getStructName()
+        Me.compiled = False
 
     End Sub
-
-    'Compile
-    Public Overrides Function compile() As String
-
-        Return ""
-
-    End Function
 
     'ToString
     Public Overrides Function ToString() As String
@@ -60,60 +54,34 @@ Public Class FunctionNode
     Public Name As String
     Public Arguments As List(Of FunctionArgument)
 
-    Private unsafeReturnType As unsafeType = Nothing
+    Private unsafeReturnType As typeNode = Nothing
     Private safeReturnType As safeType = Nothing
     Public ReadOnly Property returnType As safeType
         Get
-            compile()
             Return safeReturnType
         End Get
     End Property
 
 
-    Public compiledName As String
-    Private compiled As Boolean
+    Public compiledName As String = ""
+    Public compiled As Boolean
+    Public compiling As Boolean
 
     'New
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal Name As String, ByVal Arguments As List(Of FunctionArgument), ByVal unsafeReturnType As unsafeType)
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal Name As String, ByVal Arguments As List(Of FunctionArgument), ByVal unsafeReturnType As typeNode)
         MyBase.New(positionStart, positionEnd)
         Me.Name = Name
         Me.Arguments = Arguments
         Me.unsafeReturnType = unsafeReturnType
-        Me.compiled = False
-        Me.compiledName = getFunctionName()
-    End Sub
-
-    'Compile
-    Public Overrides Function compile() As String
-
-        'Compiled
-        If Me.compiled = True Then
-            Return ""
-        End If
-        Me.compiled = True
-
-        'Unsafe type
         If Not Me.unsafeReturnType Is Nothing Then
-            Me.safeReturnType = Me.unsafeReturnType.ToSafeType(Me)
+            Me.unsafeReturnType.parentNode = Me
         End If
-
-        'Variable
-        Dim content As String = ""
-
-        'Arguments
-        Dim argument As String = ""
-        If Arguments.Count = 0 Then
-            argument = "void"
-        Else
-            For Each arg As FunctionArgument In Arguments
-                argument &= ""
-            Next
-        End If
-
-
-        Return ""
-
-    End Function
+        Me.compiled = False
+        Me.compiling = False
+        For Each arg As FunctionArgument In Me.Arguments
+            arg.type.parentNode = Me
+        Next
+    End Sub
 
     'ToString
     Public Overrides Function ToString() As String
@@ -148,9 +116,9 @@ End Class
 Public Class FunctionArgument
 
     Public name As String
-    Public type As unsafeType
+    Public type As typeNode
     Public ref As Boolean
-    Public Sub New(ByVal name As String, ByVal type As unsafeType, ByVal ref As Boolean)
+    Public Sub New(ByVal name As String, ByVal type As typeNode, ByVal ref As Boolean)
         Me.name = name
         Me.type = type
         Me.ref = ref

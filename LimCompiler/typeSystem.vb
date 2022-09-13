@@ -1,13 +1,16 @@
 ﻿'=================================
 '========== UNSAFE TYPE ==========
 '=================================
-Public Class unsafeType
+Public Class typeNode
+    Inherits Node
 
-    Public StructName As Object
+    Public StructName As ElementPathNode
     Public Dimensions As New List(Of ValueType)
 
-    Public Sub New(ByVal StructName As Object, ByVal Dimensions As List(Of ValueType))
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal StructName As ElementPathNode, ByVal Dimensions As List(Of ValueType))
+        MyBase.New(positionStart, positionEnd)
         Me.StructName = StructName
+        Me.StructName.parentNode = Me
         If Not Dimensions Is Nothing Then
             For Each Dimension As ValueType In Dimensions
                 Me.Dimensions.Add(Dimension)
@@ -27,24 +30,22 @@ Public Class unsafeType
                     str &= "?"
             End Select
         Next
-        Return StructName & str
+        Return StructName.ToString() & str
     End Function
 
-    Public Function getParentType() As unsafeType
+    Public Function getParentType() As typeNode
         Dim parentDimension As New List(Of ValueType)
         For Each dimension As ValueType In Me.Dimensions
             parentDimension.Add(dimension)
         Next
         If parentDimension.Count > 0 Then
             parentDimension.RemoveAt(parentDimension.Count - 1)
+        Else
+            addCustomError("Cannot resolve the type", "Cannot get parent type of a simple type")
         End If
-        Return New unsafeType(Me.StructName, parentDimension)
-    End Function
-
-    Public Function ToSafeType(ByVal node As Node) As safeType
-
-        'Name can be string or fromSpaceNode
-
+        Dim returnType As New typeNode(Me.positionStart, Me.positionEnd - 2, Me.StructName, parentDimension)
+        returnType.parentNode = Me
+        Return returnType
     End Function
 
 End Class
@@ -56,57 +57,6 @@ Public Enum ValueType
     list
     map
 End Enum
-
-Public Module typeSystem
-
-    '=================================
-    '===== STRING TO UNSAFE TYPE =====
-    '=================================
-    Public Function stringToUnsafeType(ByVal str As String, ByVal filename As String, ByVal text As String, ByVal positionStart As Integer, ByVal positionEnd As Integer) As unsafeType
-
-        'Variable
-        Dim type As New unsafeType("", New List(Of ValueType))
-        Dim exeptedCharacter As Char = Nothing
-        str = str.Insert(0, "a")
-
-        'Loop each character
-        While str.Length > 1
-
-            str = str.Substring(1)
-
-            If Not exeptedCharacter = Nothing Then
-                If str(0) = exeptedCharacter Then
-                    exeptedCharacter = Nothing
-                    Continue While
-                Else
-                    addCustomSyntaxError("CSTUT01", "The character """ & exeptedCharacter & """ was expected", filename, text, positionStart, positionEnd)
-                End If
-            End If
-
-            Select Case str(0)
-
-                Case "["
-                    type.Dimensions.Add(ValueType.list)
-                    exeptedCharacter = "]"
-                    Continue While
-
-                Case "{"
-                    type.Dimensions.Add(ValueType.list)
-                    exeptedCharacter = "}"
-                    Continue While
-
-            End Select
-
-            type.StructName &= str(0)
-
-        End While
-
-        'Return
-        Return type
-
-    End Function
-
-End Module
 
 '===============================
 '========== SAVE TYPE ==========
@@ -140,23 +90,6 @@ Public Class safeType
             End Select
         Next
         Return Struct.Name & str
-    End Function
-
-    Public Function compile(ByVal parentNode As Node) As String
-
-        Me.compiled = True
-
-        Dim content As String
-        If Dimensions.Count = 0 Then
-            content = Struct.compiledName
-        Else
-            content = ""
-        End If
-
-
-        Return content
-
-
     End Function
 
     Public Function getParentType() As safeType

@@ -64,20 +64,10 @@
 
     End Function
 
-
-    '===============================
-    '========= SPACE ARROW =========
-    '===============================
-    Private Function spaceArrow() As Node
-
-
-
-    End Function
-
     '========================
     '========= TYPE =========
     '========================
-    Private Function type() As unsafeType
+    Private Function type() As typeNode
 
         'Variables
         Dim waitTokenType As tokenType = Nothing
@@ -87,19 +77,21 @@
             addCustomSyntaxError("NPT01", "A name of a type was expected here", filename, text, current_tok.positionStart, current_tok.positionEnd)
         End If
 
+        'Get path
+        Dim link As ElementPathNode = elementPath()
+
         'Create unsafe type
-        Dim currentType As New unsafeType(current_tok.value, New List(Of ValueType))
+        Dim currentType As New typeNode(current_tok.positionStart, current_tok.positionEnd, link, New List(Of ValueType))
 
         'Get dimensions
         While True
-
-            advance()
 
             If Not waitTokenType = Nothing Then
                 If Not current_tok.type = waitTokenType Then
                     addCustomSyntaxError("NPT02", "The token <" & waitTokenType.ToString() & "> was expected here", filename, text, current_tok.positionStart, current_tok.positionEnd)
                 End If
                 waitTokenType = Nothing
+                advance()
                 Continue While
             End If
 
@@ -108,20 +100,64 @@
                 Case tokenType.OP_LBRACKET
                     waitTokenType = tokenType.OP_RBRACKET
                     currentType.Dimensions.Add(ValueType.list)
+                    currentType.positionEnd = current_tok.positionEnd
 
                 Case tokenType.OP_LBRACE
                     waitTokenType = tokenType.OP_RBRACE
                     currentType.Dimensions.Add(ValueType.map)
+                    currentType.positionEnd = current_tok.positionEnd
 
                 Case Else
                     Exit While
 
             End Select
 
+            advance()
+
         End While
 
         'Return type
         Return currentType
+
+    End Function
+
+    '================================
+    '========= ELEMENT PATH =========
+    '================================
+    Private Function elementPath() As ElementPathNode
+
+        'Handle error
+        If Not current_tok.type = tokenType.CT_TEXT Then
+            addCustomSyntaxError("NPEP01", "A name of a element / space was expected here", filename, text, current_tok.positionStart, current_tok.positionEnd)
+        End If
+
+        'Create link
+        Dim link As New ElementPathNode(current_tok.positionStart, current_tok.positionEnd)
+        link.childs.Add(current_tok.value)
+        advance()
+
+        'Loop
+        While current_tok.type = tokenType.OP_SPACEARROW
+
+            'Advance
+            advance()
+
+            'Error handling
+            If Not current_tok.type = tokenType.CT_TEXT Then
+                addCustomSyntaxError("NPEP02", "A name of a element / space was expected here", filename, text, current_tok.positionStart, current_tok.positionEnd)
+            End If
+
+            'Get name
+            link.childs.Add(current_tok.value)
+            link.positionEnd = current_tok.positionEnd
+
+            'Advance
+            advance()
+
+        End While
+
+        'Return
+        Return link
 
     End Function
 
@@ -154,8 +190,7 @@
             Return New BooleanNode(tok.positionStart, tok.positionEnd, False)
 
         ElseIf tok.type = tokenType.CT_TEXT Then
-            advance()
-            Return New VariableNode(tok.positionStart, tok.positionEnd, tok.value)
+            Return New VariableNode(tok.positionStart, tok.positionEnd, elementPath())
 
         ElseIf tok.type = tokenType.OP_LPAR Then
             advance()
@@ -184,14 +219,17 @@
 
             'Get start position
             Dim startPosition As Integer = current_tok.positionStart
+            Dim recedeIndex As Integer = tok_index
 
             'Get content
-            Dim functionName As String = current_tok.value
-            advance()
+            Dim functionPath As ElementPathNode = elementPath()
 
             'Check if it's a function call node
             If Not current_tok.type = tokenType.OP_LPAR Then
-                recede()
+                tok_index = recedeIndex
+                If tok_index < tokens.Count Then
+                    current_tok = tokens(tok_index)
+                End If
                 Return factor()
             End If
             advance()
@@ -220,7 +258,7 @@
             advance()
 
             'Add node
-            Return New FunctionCallNode(startPosition, endPosition, functionName, arguments)
+            Return New FunctionCallNode(startPosition, endPosition, functionPath, arguments)
 
         End If
 
@@ -341,7 +379,7 @@
             advance()
 
             'Get type
-            Dim variableUnsafeType As unsafeType = Nothing
+            Dim variableUnsafeType As typeNode = Nothing
             If current_tok.type = tokenType.OP_TWOPOINT Then
                 advance()
                 variableUnsafeType = type()
@@ -453,7 +491,7 @@
                         'Variables
                         Dim LastArgumentName As String = ""
                         Dim LastArgumentRef As Boolean = False
-                        Dim LastArgumentUnsafeType As unsafeType = Nothing
+                        Dim LastArgumentUnsafeType As typeNode = Nothing
 
                         'Search for a ref
                         If current_tok.type = tokenType.KW_REF Then
@@ -501,7 +539,7 @@
             End If
 
             'Unsafe type
-            Dim FunctionUnsafeType As unsafeType = Nothing
+            Dim FunctionUnsafeType As typeNode = Nothing
             If current_tok.type = tokenType.OP_TWOPOINT Then
 
                 advance()
