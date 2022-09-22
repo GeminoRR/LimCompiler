@@ -1,5 +1,12 @@
 ﻿Module errorHandler
 
+    '==========================
+    '========== LOG  ==========
+    '==========================
+    Public Sub addLog(ByVal message As String)
+        Console.WriteLine("[LOG] " & message)
+    End Sub
+
     '===================================
     '========== CUSTOM ERROR  ==========
     '===================================

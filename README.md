@@ -5,13 +5,17 @@ Please don't look at my horrible code.
 
 ![Alt text](https://github.com/GeminoRR/LimCompiler/blob/master/LimCompiler/logo_compiler.ico?raw=true "LimCompiler's logo")
 
-## The difference between other languages and Lim
-- Different management of references
+## Lim's particularities
+- Totally different reference management *(especially for OOP)*
 - Statically Typed
+- Compatible with OOP
+- Indentation-based statements
+- Namespaces (just call spaces)
+- Compile to Windows, Linux, MacOS (Using .NET Framework)
+
+## What I hope to add
 - Minimal Runtime
-- Object-oriented programming
-- Handle statement with indentation
-- Compiles to C, Executable Windows and Linux (later wasm)
+- Compile to C and WASM
 
 ## Examples
 ### Hello world
@@ -31,14 +35,32 @@ func main
 ### Reference
 ```swift
 func main
-	var myList = ["un", "deu", "trois", "quatre"]
-	puts(myList) //Output : ["un", "deu", "trois", "quatre"]
-	changeAt(myList, 1, "deux")
-	puts(myList) //Output : ["un", "deux", "trois", "quatre"]
+	var myName = "Bob"
+	puts(myName) //Output: Bob
+	changeName(myName)
+	puts(myName) //Output: Mathis
 
-func changeAt(@list:str[], index:int, newValue:str)
-	//The "@" allows values to be passed by reference. The send list will therefore be modified, otherwise it would have been copied entirely.
-	list[index] = newValue
+func changeName(@name) //The "@" is used to pass the value by reference.
+	name = "Mathis" //Regardless of the value, changing the "name" variable will affect "myName".
+```
+
+###Class
+```swift
+struct user
+	
+	var _username:str
+	var _age:int
+
+	func create(username:str, age:int) //Constructor
+		_username = username
+		_age = age
+
+	func str
+		return _username + " is " + _age.str()
+
+func main
+	current_user = new user("Pierre", 16)
+	puts(current_user.str())
 ```
 
 ### Window Graphics
@@ -48,14 +70,14 @@ import graphics
 var img:image
 
 func main
-	img = loadImage("amogous.png")
+	img = loadImage("among_us.png")
 	initWindow("My program", 500, 500)
 
-func drawFrame
+func drawFrame(@screen:image)
 	
 	//Draw background
-	drawRectangle(0, 0, width, height, "#FFFFFF")
+	screen.drawRectangle(0, 0, width, height, new color(255, 255, 255))
 
-	//Draw amogous
-	drawImage(50, 50, 400, 400, img)
+	//Draw among us image
+	screen.drawImage(50, 50, 400, 400, img)
 ```

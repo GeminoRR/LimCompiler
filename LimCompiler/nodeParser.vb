@@ -41,7 +41,7 @@
         Me.filename = filename
         Me.text = text
         Me.tokens.Clear()
-        Dim fileSpace As New SpaceNode(0, text.Length - 1, "init")
+        Dim fileSpace As New SpaceNode(0, text.Length - 1, "__init__")
         spaces.Add(fileSpace)
         For Each tok As token In tokens
             Me.tokens.Add(tok)
@@ -52,11 +52,15 @@
         While tok_index < tokens.Count - 1
 
             Dim obj As Node = space()
-            If Not TypeOf obj Is SpaceNode Then
-                fileSpace.addNodeToCode(obj)
-            Else
-                spaces.Add(DirectCast(obj, SpaceNode))
-            End If
+            fileSpace.addNodeToCode(obj)
+            'If Not TypeOf obj Is SpaceNode Then
+            '    fileSpace.addNodeToCode(obj)
+            'Else
+            '    If DirectCast(obj, SpaceNode).name = "__init__" Then
+            '        spaces.Remove(fileSpace)
+            '    End If
+            '    spaces.Add(DirectCast(obj, SpaceNode))
+            'End If
 
         End While
 

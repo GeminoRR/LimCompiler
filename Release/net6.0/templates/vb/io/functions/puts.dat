@@ -1,0 +1,1 @@
+puts:puts:int(@message:str)

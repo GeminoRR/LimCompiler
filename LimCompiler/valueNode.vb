@@ -266,11 +266,11 @@ Public Class childVariableNode
     Inherits Node
 
     'Variables
-    Public parentStruct As String
+    Public parentStruct As Node
     Public variableName As String
 
     'New
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal parentStruct As String, ByVal variableName As String)
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal parentStruct As Node, ByVal variableName As String)
 
         MyBase.New(positionStart, positionEnd)
         Me.parentStruct = parentStruct

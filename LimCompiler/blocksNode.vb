@@ -8,6 +8,7 @@ Public Class StructNode
     Public Name As String
     Public compiledName As String = ""
     Public compiled As Boolean
+    Public compiledTemplate As String = ""
 
     'New
     Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal Name As String)
@@ -54,18 +55,14 @@ Public Class FunctionNode
     Public Name As String
     Public Arguments As List(Of FunctionArgument)
 
-    Private unsafeReturnType As typeNode = Nothing
-    Private safeReturnType As safeType = Nothing
-    Public ReadOnly Property returnType As safeType
-        Get
-            Return safeReturnType
-        End Get
-    End Property
+    Public unsafeReturnType As typeNode = Nothing
+    Public ReturnType As safeType = Nothing
 
 
     Public compiledName As String = ""
     Public compiled As Boolean
     Public compiling As Boolean
+    Public compiledTemplate As String = ""
 
     'New
     Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal Name As String, ByVal Arguments As List(Of FunctionArgument), ByVal unsafeReturnType As typeNode)

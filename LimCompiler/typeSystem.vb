@@ -65,11 +65,9 @@ Public Class safeType
 
     Public Struct As StructNode
     Public Dimensions As New List(Of ValueType)
-    Private compiled As Boolean
 
-    Public Sub New(ByVal Struct As StructNode, ByVal Dimensions As List(Of ValueType))
+    Public Sub New(ByVal Struct As StructNode, Optional ByVal Dimensions As List(Of ValueType) = Nothing)
         Me.Struct = Struct
-        Me.compiled = False
         If Not Dimensions Is Nothing Then
             For Each Dimension As ValueType In Dimensions
                 Me.Dimensions.Add(Dimension)
@@ -101,6 +99,27 @@ Public Class safeType
             parentDimension.RemoveAt(parentDimension.Count - 1)
         End If
         Return New safeType(Me.Struct, parentDimension)
+    End Function
+
+    Public Function IsTheSameAs(ByVal other As safeType) As Boolean
+
+        'Name
+        If Not Me.Struct.compiledName = other.Struct.compiledName Then
+            Return False
+        End If
+
+        'Dimensions
+        For i As Integer = 0 To Me.Dimensions.Count - 1
+            If Not i < other.Dimensions.Count Then
+                Return False
+            End If
+            If Not Me.Dimensions(0) = other.Dimensions(0) Then
+                Return False
+            End If
+        Next
+        'Pass all checks
+        Return True
+
     End Function
 
 End Class
