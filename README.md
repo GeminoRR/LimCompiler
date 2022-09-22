@@ -44,8 +44,12 @@ func changeName(@name) //The "@" is used to pass the value by reference.
 	name = "Mathis" //Regardless of the value, changing the "name" variable will affect "myName".
 ```
 
-###Class
+### Class
 ```swift
+func main
+	current_user = new user("Pierre", 16)
+	puts(current_user.str())
+
 struct user
 	
 	var _username:str
@@ -57,10 +61,6 @@ struct user
 
 	func str
 		return _username + " is " + _age.str()
-
-func main
-	current_user = new user("Pierre", 16)
-	puts(current_user.str())
 ```
 
 ### Window Graphics
