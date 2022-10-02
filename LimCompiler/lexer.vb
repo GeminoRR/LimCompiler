@@ -179,9 +179,9 @@ Public Class lexer
                     advance()
                 End While
                 If dot_count = 0 Then
-                    tokens.Add(New token(tokenType.CT_INTEGER, startPos, charCounter, create_number))
+                    tokens.Add(New token(tokenType.CT_INTEGER, startPos, charCounter - 1, create_number))
                 ElseIf dot_count = 1 Then
-                    tokens.Add(New token(tokenType.CT_FLOAT, startPos, charCounter, create_number))
+                    tokens.Add(New token(tokenType.CT_FLOAT, startPos, charCounter - 1, create_number))
                 Else
                     addCustomSyntaxError("LP02", "A number cannot contain more than one point", filename, text, startPos, charCounter)
                 End If
@@ -201,33 +201,35 @@ Public Class lexer
 
                 Select Case create_var.ToLower()
                     Case "true"
-                        tokens.Add(New token(tokenType.CT_TRUE, startPos, charCounter))
+                        tokens.Add(New token(tokenType.CT_TRUE, startPos, charCounter - 1))
                     Case "false"
-                        tokens.Add(New token(tokenType.CT_FALSE, startPos, charCounter))
+                        tokens.Add(New token(tokenType.CT_FALSE, startPos, charCounter - 1))
                     Case "null"
-                        tokens.Add(New token(tokenType.CT_NULL, startPos, charCounter))
+                        tokens.Add(New token(tokenType.CT_NULL, startPos, charCounter - 1))
                     Case "new"
-                        tokens.Add(New token(tokenType.KW_NEW, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_NEW, startPos, charCounter - 1))
                     Case "in"
-                        tokens.Add(New token(tokenType.OP_IN, startPos, charCounter))
+                        tokens.Add(New token(tokenType.OP_IN, startPos, charCounter - 1))
                     Case "let"
-                        tokens.Add(New token(tokenType.KW_LET, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_LET, startPos, charCounter - 1))
                     Case "var"
-                        tokens.Add(New token(tokenType.KW_VAR, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_VAR, startPos, charCounter - 1))
                     Case "const"
-                        tokens.Add(New token(tokenType.KW_CONST, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_CONST, startPos, charCounter - 1))
                     Case "return"
-                        tokens.Add(New token(tokenType.KW_RETURN, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_RETURN, startPos, charCounter - 1))
                     Case "struct"
-                        tokens.Add(New token(tokenType.KW_STRUCT, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_STRUCT, startPos, charCounter - 1))
                     Case "func"
-                        tokens.Add(New token(tokenType.KW_FUNC, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_FUNC, startPos, charCounter - 1))
                     Case "space"
-                        tokens.Add(New token(tokenType.KW_SPACE, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_SPACE, startPos, charCounter - 1))
                     Case "ref"
-                        tokens.Add(New token(tokenType.KW_REF, startPos, charCounter))
+                        tokens.Add(New token(tokenType.KW_REF, startPos, charCounter - 1))
+                    Case "import"
+                        tokens.Add(New token(tokenType.KW_IMPORT, startPos, charCounter - 1))
                     Case Else
-                        tokens.Add(New token(tokenType.CT_TEXT, startPos, charCounter, create_var))
+                        tokens.Add(New token(tokenType.CT_TEXT, startPos, charCounter - 1, create_var))
                 End Select
 
             ElseIf currentChar = " " Then

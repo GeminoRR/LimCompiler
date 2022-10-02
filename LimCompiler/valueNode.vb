@@ -26,6 +26,79 @@ Public Class BracketsSelectorNode
 
 End Class
 
+'============================
+'========= ListNode =========
+'============================
+Public Class ListNode
+    Inherits Node
+
+    'Variable
+    Public elements As New List(Of Node)
+
+    'New
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer)
+
+        MyBase.New(positionStart, positionEnd)
+
+    End Sub
+
+    'Add element
+    Public Sub addElement(ByVal elm As Node)
+        elm.parentNode = Me
+        elements.Add(elm)
+    End Sub
+
+    'ToString
+    Public Overrides Function ToString() As String
+        Dim elementToString As String = ""
+        For Each elm As Node In elements
+            elementToString &= ", " & elm.ToString()
+        Next
+        If elementToString.StartsWith(", ") Then
+            elementToString = elementToString.Substring(2)
+        End If
+        Return "[" & elementToString & "]"
+    End Function
+
+End Class
+
+'===========================
+'========= MapNode =========
+'===========================
+Public Class MapNode
+    Inherits Node
+
+    'Variable
+    Public elements As New List(Of List(Of Node))
+
+    'New
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer)
+
+        MyBase.New(positionStart, positionEnd)
+
+    End Sub
+
+    'Add element
+    Public Sub addElement(ByVal key As Node, ByVal value As Node)
+        key.parentNode = Me
+        value.parentNode = Me
+        elements.Add({key, value}.ToList())
+    End Sub
+
+    'ToString
+    Public Overrides Function ToString() As String
+        Dim elementToString As String = ""
+        For Each elm As List(Of Node) In elements
+            elementToString &= ", " & elm(0).ToString() & ":" & elm(1).ToString()
+        Next
+        If elementToString.StartsWith(", ") Then
+            elementToString = elementToString.Substring(2)
+        End If
+        Return "{" & elementToString & "}"
+    End Function
+
+End Class
+
 '====================================
 '========= FunctionCallNode =========
 '====================================
@@ -259,28 +332,32 @@ Public Class binOpNode
 
 End Class
 
-'==================================
-'========= Child Variable =========
-'==================================
-Public Class childVariableNode
+'==============================
+'========= Child Node =========
+'==============================
+Public Class childNode
     Inherits Node
 
     'Variables
     Public parentStruct As Node
-    Public variableName As String
+    Public childNode As Node
 
     'New
-    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal parentStruct As Node, ByVal variableName As String)
+    Public Sub New(ByVal positionStart As Integer, ByVal positionEnd As Integer, ByVal left As Node, ByVal right As Node)
 
         MyBase.New(positionStart, positionEnd)
-        Me.parentStruct = parentStruct
-        Me.variableName = variableName
+
+        Me.parentStruct = left
+        Me.parentStruct.parentNode = Me
+
+        Me.childNode = right
+        Me.childNode.parentNode = Me
 
     End Sub
 
     'ToString
     Public Overrides Function ToString() As String
-        Return String.Format("{0}.{1}", parentStruct, variableName)
+        Return String.Format("({0}.{1})", parentStruct.ToString(), childNode.ToString())
     End Function
 
 End Class

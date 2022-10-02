@@ -60,6 +60,8 @@ Public Enum tokenType
     KW_FUNC
     KW_SPACE
 
+    KW_IMPORT
+
 
     'Operators (OP)
     OP_POINT

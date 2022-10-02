@@ -54,7 +54,7 @@ Public Class FileNode
     Public spaces As List(Of SpaceNode)
 
     'New
-    Public Sub New(ByVal path As String)
+    Public Sub New(ByVal path As String, ByVal filesToImports As HashSet(Of String))
 
         'Inherits
         MyBase.New(0, 0)
@@ -79,6 +79,39 @@ Public Class FileNode
         'Generates Tokens
         Dim lexer As New lexer()
         Dim tokens As List(Of token) = lexer.parse(Me.text, Me.name)
+
+        'Get imports
+        Dim tokenLoop As Integer = 0
+        While tokens.Count > 0
+
+            'Line start
+            If Not tokens(tokenLoop).type = tokenType.CT_LINESTART Then
+                Exit While
+            End If
+            If Not tokens(tokenLoop).value = 0 Then
+                Exit While
+            End If
+            tokenLoop += 1
+
+            'Check import
+            If Not tokens(tokenLoop).type = tokenType.KW_IMPORT Then
+                Exit While
+            End If
+            tokenLoop += 1
+
+            'Get name
+            If Not {tokenType.CT_TEXT, tokenType.CT_STRING}.Contains(tokens(tokenLoop).type) Then
+                addCustomSyntaxError("FN01", "A file / library name is expected after an ""import""", Me.name, Me.text, tokens(tokenLoop).positionStart, tokens(tokenLoop).positionEnd)
+            End If
+            filesToImports.Add(tokens(tokenLoop).value)
+
+            'Remove tokens
+            For i As Integer = 0 To tokenLoop
+                tokens.RemoveAt(0)
+            Next
+            tokenLoop = 0
+
+        End While
 
         'Generate AST
         Dim parser As New nodeParser()

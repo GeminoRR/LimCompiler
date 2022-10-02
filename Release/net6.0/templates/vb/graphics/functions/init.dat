@@ -1,0 +1,1 @@
+init:initWindow:null(@name:str,@width:int,@height:int)

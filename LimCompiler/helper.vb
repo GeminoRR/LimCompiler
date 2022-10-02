@@ -25,7 +25,7 @@ Module helper
     '==================================
     '========== GET TEMPLATE ==========
     '==================================
-    Public Function getTemplate(ByVal templateFolder As String, ByVal filename As String)
+    Public Function getTemplate(ByVal templateFolder As String, ByVal filename As String) As String
         If Not File.Exists(templateFolder & "/" & filename) Then
             addCustomError("Cannot read file", """" & templateFolder & "/" & filename & """ is missing")
         End If

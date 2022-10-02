@@ -206,6 +206,70 @@
                 addCustomSyntaxError("NPF02", "A parenthesis was expected here", filename, Me.text, current_tok.positionStart, current_tok.positionEnd)
             End If
 
+        ElseIf tok.type = tokenType.OP_LBRACKET Then
+            advance()
+            Dim list As New ListNode(tok.positionStart, 0)
+            While True
+
+                'Get value
+                list.addElement(comparison())
+
+                'End list ?
+                If current_tok.type = tokenType.OP_RBRACKET Then
+                    list.positionEnd = current_tok.positionEnd
+                    Exit While
+                End If
+
+                'Comma ?
+                If current_tok.type = tokenType.OP_COMMA Then
+                    advance()
+                    Continue While
+                End If
+
+                'Error
+                addCustomSyntaxError("NPF03", "A comma or square bracket was expected here.", filename, Me.text, current_tok.positionStart, current_tok.positionEnd)
+
+            End While
+            advance()
+            Return list
+
+        ElseIf tok.type = tokenType.OP_LBRACE Then
+            advance()
+            Dim map As New MapNode(tok.positionStart, 0)
+            While True
+
+                'Get Key
+                Dim key As Node = comparison()
+
+                'Get value
+                If Not current_tok.type = tokenType.OP_TWOPOINT Then
+                    addCustomSyntaxError("NPF04", "A "":"" was expected here.", filename, Me.text, current_tok.positionStart, current_tok.positionEnd)
+                End If
+                advance()
+                Dim value As Node = comparison()
+
+                'Add key & value
+                map.addElement(key, value)
+
+                'End list ?
+                If current_tok.type = tokenType.OP_RBRACE Then
+                    map.positionEnd = current_tok.positionEnd
+                    Exit While
+                End If
+
+                'Comma ?
+                If current_tok.type = tokenType.OP_COMMA Then
+                    advance()
+                    Continue While
+                End If
+
+                'Error
+                addCustomSyntaxError("NPF04", "A comma or right brace was expected here.", filename, Me.text, current_tok.positionStart, current_tok.positionEnd)
+
+            End While
+            advance()
+            Return map
+
         End If
 
         addCustomSyntaxError("NPF01", "Something else was expected here", filename, Me.text, current_tok.positionStart, current_tok.positionEnd)
@@ -291,16 +355,32 @@
 
     End Function
 
+    '==============================
+    '========= Child Node =========
+    '==============================
+    Private Function child() As Node
+
+        Dim left = BracketsSelector()
+        While current_tok.type = tokenType.OP_POINT
+            advance()
+            Dim right = BracketsSelector()
+            left = New childNode(left.positionStart, right.positionEnd, left, right)
+        End While
+
+        Return left
+
+    End Function
+
     '========================
     '========= TERM =========
     '========================
     Private Function term() As Node
 
-        Dim left = BracketsSelector()
+        Dim left = child()
         While current_tok.type = tokenType.OP_MULTIPLICATION Or current_tok.type = tokenType.OP_DIVISION Or current_tok.type = tokenType.OP_MODULO
             Dim op = current_tok
             advance()
-            Dim right = BracketsSelector()
+            Dim right = child()
             left = New binOpNode(left.positionStart, right.positionEnd, left, op, right)
         End While
 

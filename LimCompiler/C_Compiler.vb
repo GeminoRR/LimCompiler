@@ -55,7 +55,7 @@ Public Class CCompiler
         End Try
 
         'Add file
-        Dim mainFile As New FileNode(target)
+        Dim mainFile As New FileNode(target, New HashSet(Of String))
         spaces.AddRange(mainFile.spaces)
 
         'Compile code
